@@ -14,7 +14,7 @@ El proyecto organiza los cuatro círculos concéntricos de Clean Architecture, g
 | **Entities** | `domain/` | Aggregate Root `HallazgoAuditoria`; Value Objects `HallazgoId`, `Severidad`, `PlanRemediacion`; enum con máquina de estados `EstadoHallazgo`; `TransicionInvalidaException`. Sin imports de Spring ni JPA. |
 | **Use Cases** | `usecase/` | Interfaces de casos de uso, puertos (`HallazgoRepositoryPort`, `HistorialAuditoriaPort`) e implementaciones en `impl/`. Sin imports de Spring. |
 | **Interface Adapters** | `adapter/` | Entrada: `HallazgoController` y DTOs. Salida: entidades JPA, `HallazgoRepositoryAdapter` e `HistorialAuditoriaAdapter` (traducen dominio $\leftrightarrow$ JPA). |
-| **Frameworks & Drivers** | `config/` | Spring Boot + JPA + H2. `AuditoriaConfiguration` hace el wiring explícito de casos de uso y puertos. |
+| **Frameworks & Drivers** | `config/` | Spring Boot + JPA + H2. `AuditoriaConfiguration` hace el wiring explícito de casos de uso y puertos; los decoradores `*Transaccional` aplican `@Transactional` desde este círculo exterior para que `usecase/` no dependa de Spring. |
 
 ### Estructura del proyecto
 ```text
@@ -64,8 +64,11 @@ src/main/java/com/example/auditoria/
 │       ├── HistorialCambioEstadoEntity.java
 │       ├── HistorialCambioEstadoJpaRepository.java
 │       └── HistorialAuditoriaAdapter.java
-├── config/
-│   └── AuditoriaConfiguration.java
+├── ├── config/
+│   ├── AuditoriaConfiguration.java
+│   ├── IniciarRemediacionTransaccional.java
+│   ├── CerrarHallazgoTransaccional.java
+│   └── ReabrirHallazgoTransaccional.java
 └── AuditoriaHallazgosApplication.java
 ```
 
@@ -96,7 +99,7 @@ Nuevos requisitos del comité: (1) dashboard con conteos por severidad y estado 
    Aplicando los criterios de la Sección 7 (escala, complejidad de consultas, consistencia y señales de sobre-ingeniería) y la Sección 4.4 (cuándo aplicar CQRS), las lecturas del dashboard son agregaciones simples sobre el mismo esquema y no hay carga asimétrica. Se extendió el puerto y el repositorio JPA existentes en lugar de crear un stack de lectura, evitando sincronizar múltiples modelos.
 
 4. **Bitácora simple (`HistorialCambioEstado`) vs. Event Store completo:**  
-   Un Event Store obligaría a que `HallazgoAuditoria` dejara de persistir su estado y se reconstruyera por replay, un cambio profundo sobre un agregado que ya funciona y sin necesidad real de reproducir estados intermedios (Sección 5.5). Las señales de sobre-ingeniería de la Sección 7.2 (sin experto en eventos, sin experiencia del equipo, costo desproporcionado) refuerzan la decisión. La bitácora es una tabla append-only que registra cada transición sin ser fuente de verdad del estado.
+   Un Event Store obligaría a que `HallazgoAuditoria` dejara de persistir su estado y se reconstruyera por replay, un cambio profundo sobre un agregado que ya funciona y sin necesidad real de reproducir estados intermedios (Sección 5.5). Las señales de sobre-ingeniería de la Sección 7.2 (sin experto en eventos, sin experiencia del equipo, costo desproporcionado) refuerzan la decisión. La bitácora es una tabla append-only que registra cada transición sin ser fuente de verdad del estado.La escritura de la bitácora ocurre en la misma transacción que el cambio de estado: se garantiza con decoradores `@Transactional` en `config/`, de modo que los casos de uso permanecen libres de dependencias de Spring.
 
 
 ## Cómo ejecutar
