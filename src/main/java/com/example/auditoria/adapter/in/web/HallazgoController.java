@@ -137,10 +137,5 @@ return ResponseEntity.ok(id.toString());}
         List<ConteoCategoria> resultado = consultarUseCase.obtenerReabiertosPorCategoria();
         return ResponseEntity.ok(resultado);
     }
-    @GetMapping("/{id}")
-    public ResponseEntity<Object> consultarPorId(@PathVariable String id) {
-        HallazgoId hallazgoId = new HallazgoId(UUID.fromString(id));
-        var hallazgo = consultarUseCase.ejecutar(hallazgoId);
-        return ResponseEntity.ok(hallazgo);
-    }
+  
 }
