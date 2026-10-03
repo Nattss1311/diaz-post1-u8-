@@ -1,92 +1,140 @@
 package com.example.auditoria.adapter.in.web;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.example.auditoria.adapter.in.web.dto.HallazgoResponse;
-import com.example.auditoria.adapter.in.web.dto.IniciarRemediacionRequest;
-import com.example.auditoria.adapter.in.web.dto.ReabrirRequest;
-import com.example.auditoria.adapter.in.web.dto.RegistrarHallazgoRequest;
-import com.example.auditoria.domain.entity.HallazgoAuditoria;
+import com.example.auditoria.domain.valueobject.Severidad;
 import com.example.auditoria.domain.valueobject.HallazgoId;
 import com.example.auditoria.usecase.CerrarHallazgoUseCase;
 import com.example.auditoria.usecase.ConsultarHallazgoUseCase;
 import com.example.auditoria.usecase.IniciarRemediacionUseCase;
+import com.example.auditoria.usecase.ObtenerDashboardAuditoriaUseCase;
 import com.example.auditoria.usecase.ReabrirHallazgoUseCase;
 import com.example.auditoria.usecase.RegistrarHallazgoUseCase;
+import com.example.auditoria.usecase.port.CambioEstadoView;
+import com.example.auditoria.usecase.port.DashboardAuditoriaView;
+import com.example.auditoria.usecase.port.ConteoCategoria;
+import com.example.auditoria.usecase.port.PromedioCategoria;
 
 @RestController
 @RequestMapping("/api/hallazgos")
 public class HallazgoController {
 
     private final RegistrarHallazgoUseCase registrarUseCase;
-    private final IniciarRemediacionUseCase iniciarRemediacionUseCase;
-    private final CerrarHallazgoUseCase cerrarUseCase;
-    private final ReabrirHallazgoUseCase reabrirUseCase;
     private final ConsultarHallazgoUseCase consultarUseCase;
+    private final ObtenerDashboardAuditoriaUseCase dashboardUseCase;
+    private final IniciarRemediacionUseCase iniciarRemediacionUseCase;
+    private final CerrarHallazgoUseCase cerrarHallazgoUseCase;
+    private final ReabrirHallazgoUseCase reabrirHallazgoUseCase;
 
     public HallazgoController(
             RegistrarHallazgoUseCase registrarUseCase,
+            ConsultarHallazgoUseCase consultarUseCase,
+            ObtenerDashboardAuditoriaUseCase dashboardUseCase,
             IniciarRemediacionUseCase iniciarRemediacionUseCase,
-            CerrarHallazgoUseCase cerrarUseCase,
-            ReabrirHallazgoUseCase reabrirUseCase,
-            ConsultarHallazgoUseCase consultarUseCase) {
+            CerrarHallazgoUseCase cerrarHallazgoUseCase,
+            ReabrirHallazgoUseCase reabrirHallazgoUseCase) {
         this.registrarUseCase = registrarUseCase;
-        this.iniciarRemediacionUseCase = iniciarRemediacionUseCase;
-        this.cerrarUseCase = cerrarUseCase;
-        this.reabrirUseCase = reabrirUseCase;
         this.consultarUseCase = consultarUseCase;
+        this.dashboardUseCase = dashboardUseCase;
+        this.iniciarRemediacionUseCase = iniciarRemediacionUseCase;
+        this.cerrarHallazgoUseCase = cerrarHallazgoUseCase;
+        this.reabrirHallazgoUseCase = reabrirHallazgoUseCase;
     }
 
+    // DTO para recibir la creación del hallazgo
+    // DTO para recibir la creación del hallazgo
+    public record RegistrarHallazgoRequest(
+            String titulo,
+            String descripcion,
+            String areaResponsable,
+            String severidad
+    ) {}
+
+    // Endpoint para CREAR un nuevo Hallazgo
+   // Endpoint para CREAR un nuevo Hallazgo
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> registrar(@RequestBody RegistrarHallazgoRequest req) {
+    public ResponseEntity<String> registrar(@RequestBody RegistrarHallazgoRequest req) {
+        Severidad severidadEnum = Severidad.valueOf(req.severidad().toUpperCase());
+
         HallazgoId id = registrarUseCase.ejecutar(
-            req.titulo(), req.descripcion(), req.areaResponsable(), req.severidad(), req.fechaDeteccion());
-        return Map.of("hallazgoId", id.toString());
+                req.titulo(),
+                req.descripcion(),
+                req.areaResponsable(),
+                severidadEnum,
+                LocalDate.now()
+        );
+
+return ResponseEntity.ok(id.toString());}
+    // Checkpoint 1: GET /api/hallazgos/dashboard
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardAuditoriaView> obtenerDashboard() {
+        DashboardAuditoriaView dashboard = dashboardUseCase.ejecutar();
+        return ResponseEntity.ok(dashboard);
     }
 
-    @PatchMapping("/{id}/iniciar-remediacion")
-    public Map<String, String> iniciarRemediacion(@PathVariable String id,
-            @RequestBody IniciarRemediacionRequest req) {
-        iniciarRemediacionUseCase.ejecutar(
-            new HallazgoId(UUID.fromString(id)), req.responsable(), req.fechaLimite(), req.notas());
-        return Map.of("estado", "EN_REMEDIACION");
+    // Checkpoint 2: GET /api/hallazgos/{id}/historial
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<List<CambioEstadoView>> obtenerHistorial(@PathVariable String id) {
+        HallazgoId hallazgoId = new HallazgoId(UUID.fromString(id));
+        List<CambioEstadoView> historial = consultarUseCase.obtenerHistorial(hallazgoId);
+        return ResponseEntity.ok(historial);
     }
 
-    @PatchMapping("/{id}/cerrar")
-    public Map<String, String> cerrar(@PathVariable String id) {
-        cerrarUseCase.ejecutar(new HallazgoId(UUID.fromString(id)));
-        return Map.of("estado", "CERRADO");
+    // DTOs auxiliares para transiciones
+    public record IniciarRemediacionRequest(String responsable, LocalDate fechaLimite, String notas) {}
+    public record ReabrirRequest(String motivo) {}
+
+    // Transiciones de estado
+    @PostMapping("/{id}/iniciar-remediacion")
+    public ResponseEntity<Void> iniciarRemediacion(
+            @PathVariable String id, 
+            @RequestBody(required = false) IniciarRemediacionRequest req) {
+        HallazgoId hallazgoId = new HallazgoId(UUID.fromString(id));
+        String responsable = (req != null && req.responsable() != null) ? req.responsable() : "Sin asignar";
+        LocalDate fechaLimite = (req != null && req.fechaLimite() != null) ? req.fechaLimite() : LocalDate.now().plusDays(15);
+        String notas = (req != null && req.notas() != null) ? req.notas() : "Plan de remediación iniciado";
+        
+        iniciarRemediacionUseCase.ejecutar(hallazgoId, responsable, fechaLimite, notas);
+        return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/{id}/reabrir")
-    public Map<String, String> reabrir(@PathVariable String id, @RequestBody ReabrirRequest req) {
-        reabrirUseCase.ejecutar(new HallazgoId(UUID.fromString(id)), req.motivo());
-        return Map.of("estado", "REABIERTO");
+    @PostMapping("/{id}/cerrar")
+    public ResponseEntity<Void> cerrar(@PathVariable String id) {
+        HallazgoId hallazgoId = new HallazgoId(UUID.fromString(id));
+        cerrarHallazgoUseCase.ejecutar(hallazgoId);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}")
-    public HallazgoResponse buscar(@PathVariable String id) {
-        HallazgoAuditoria h = consultarUseCase.obtenerPorId(new HallazgoId(UUID.fromString(id)));
-        return HallazgoResponse.deDominio(h);
+    @PostMapping("/{id}/reabrir")
+    public ResponseEntity<Void> reabrir(
+            @PathVariable String id, 
+            @RequestBody(required = false) ReabrirRequest req) {
+        HallazgoId hallazgoId = new HallazgoId(UUID.fromString(id));
+        String motivo = (req != null && req.motivo() != null) ? req.motivo() : "Reabierto por auditoría";
+        
+        reabrirHallazgoUseCase.ejecutar(hallazgoId, motivo);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping
-    public List<HallazgoResponse> listar() {
-        return consultarUseCase.obtenerTodos().stream()
-                .map(HallazgoResponse::deDominio)
-                .toList();
+    // Métricas
+    @GetMapping("/metricas/promedio-remediacion")
+    public ResponseEntity<List<PromedioCategoria>> obtenerPromedioRemediacion() {
+        List<PromedioCategoria> resultado = consultarUseCase.obtenerPromedioDiasRemediacionPorCategoria();
+        return ResponseEntity.ok(resultado);
+    }
+
+    @GetMapping("/metricas/reabiertos")
+    public ResponseEntity<List<ConteoCategoria>> obtenerReabiertos() {
+        List<ConteoCategoria> resultado = consultarUseCase.obtenerReabiertosPorCategoria();
+        return ResponseEntity.ok(resultado);
     }
 }
