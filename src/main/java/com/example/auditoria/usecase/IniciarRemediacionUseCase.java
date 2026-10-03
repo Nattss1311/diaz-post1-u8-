@@ -1,4 +1,4 @@
-package com.example.auditoria.usecase;
+package com.example.auditoria.usecase; // <-- Corregido sin .domain
 
 import java.time.LocalDate;
 

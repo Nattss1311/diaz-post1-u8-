@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.example.auditoria.domain.valueobject.EstadoHallazgo;
 import com.example.auditoria.domain.valueobject.Severidad;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,8 +18,12 @@ public class HallazgoJpaEntity {
 
     @Id
     private String id;
+
     private String titulo;
+
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
+
     private String areaResponsable;
 
     @Enumerated(EnumType.STRING)
@@ -29,43 +34,113 @@ public class HallazgoJpaEntity {
 
     private LocalDate fechaDeteccion;
     private LocalDate fechaCierre;
+
     private String planResponsable;
     private LocalDate planFechaLimite;
+
+    @Column(columnDefinition = "TEXT")
     private String planNotas;
 
-    public HallazgoJpaEntity() {}
+    private boolean reabierto;
+
+    public HallazgoJpaEntity() {
+    }
 
     // Getters y Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
 
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public String getId() {
+        return id;
+    }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getAreaResponsable() { return areaResponsable; }
-    public void setAreaResponsable(String areaResponsable) { this.areaResponsable = areaResponsable; }
+    public String getTitulo() {
+        return titulo;
+    }
 
-    public Severidad getSeveridad() { return severidad; }
-    public void setSeveridad(Severidad severidad) { this.severidad = severidad; }
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
 
-    public EstadoHallazgo getEstado() { return estado; }
-    public void setEstado(EstadoHallazgo estado) { this.estado = estado; }
+    public String getDescripcion() {
+        return descripcion;
+    }
 
-    public LocalDate getFechaDeteccion() { return fechaDeteccion; }
-    public void setFechaDeteccion(LocalDate fechaDeteccion) { this.fechaDeteccion = fechaDeteccion; }
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
 
-    public LocalDate getFechaCierre() { return fechaCierre; }
-    public void setFechaCierre(LocalDate fechaCierre) { this.fechaCierre = fechaCierre; }
+    public String getAreaResponsable() {
+        return areaResponsable;
+    }
 
-    public String getPlanResponsable() { return planResponsable; }
-    public void setPlanResponsable(String planResponsable) { this.planResponsable = planResponsable; }
+    public void setAreaResponsable(String areaResponsable) {
+        this.areaResponsable = areaResponsable;
+    }
 
-    public LocalDate getPlanFechaLimite() { return planFechaLimite; }
-    public void setPlanFechaLimite(LocalDate planFechaLimite) { this.planFechaLimite = planFechaLimite; }
+    public Severidad getSeveridad() {
+        return severidad;
+    }
 
-    public String getPlanNotas() { return planNotas; }
-    public void setPlanNotas(String planNotas) { this.planNotas = planNotas; }
+    public void setSeveridad(Severidad severidad) {
+        this.severidad = severidad;
+    }
+
+    public EstadoHallazgo getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoHallazgo estado) {
+        this.estado = estado;
+    }
+
+    public LocalDate getFechaDeteccion() {
+        return fechaDeteccion;
+    }
+
+    public void setFechaDeteccion(LocalDate fechaDeteccion) {
+        this.fechaDeteccion = fechaDeteccion;
+    }
+
+    public LocalDate getFechaCierre() {
+        return fechaCierre;
+    }
+
+    public void setFechaCierre(LocalDate fechaCierre) {
+        this.fechaCierre = fechaCierre;
+    }
+
+    public String getPlanResponsable() {
+        return planResponsable;
+    }
+
+    public void setPlanResponsable(String planResponsable) {
+        this.planResponsable = planResponsable;
+    }
+
+    public LocalDate getPlanFechaLimite() {
+        return planFechaLimite;
+    }
+
+    public void setPlanFechaLimite(LocalDate planFechaLimite) {
+        this.planFechaLimite = planFechaLimite;
+    }
+
+    public String getPlanNotas() {
+        return planNotas;
+    }
+
+    public void setPlanNotas(String planNotas) {
+        this.planNotas = planNotas;
+    }
+
+    public boolean isReabierto() {
+        return reabierto;
+    }
+
+    public void setReabierto(boolean reabierto) {
+        this.reabierto = reabierto;
+    }
 }

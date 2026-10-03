@@ -68,6 +68,9 @@ src/main/java/com/example/auditoria/
 │   └── AuditoriaConfiguration.java
 └── AuditoriaHallazgosApplication.java
 ```
+
+---
+
 ## Parte 2 — Análisis costo-beneficio de CQRS / Event Sourcing
 
 Nuevos requisitos del comité: (1) dashboard con conteos por severidad y estado y promedio de días de cierre por área; (2) trazabilidad cronológica e inmutable de cada cambio de estado. Análisis detallado según los criterios de las Secciones 4.4, 5.5 y 7 de la guía:
@@ -96,22 +99,23 @@ Nuevos requisitos del comité: (1) dashboard con conteos por severidad y estado 
    Un Event Store obligaría a que `HallazgoAuditoria` dejara de persistir su estado y se reconstruyera por replay, un cambio profundo sobre un agregado que ya funciona y sin necesidad real de reproducir estados intermedios (Sección 5.5). Las señales de sobre-ingeniería de la Sección 7.2 (sin experto en eventos, sin experiencia del equipo, costo desproporcionado) refuerzan la decisión. La bitácora es una tabla append-only que registra cada transición sin ser fuente de verdad del estado.
 
 
-## Cómo Ejecutar
+## Cómo ejecutar
 
 ```bash
-# Compilar el proyecto
-mvn clean compile
+# Compilar y empaquetar (incluye pruebas)
+mvn clean package
 
-# Ejecutar las pruebas unitarias
+# Ejecutar solo las pruebas unitarias
 mvn test
 
-
-# Iniciar la aplicación Spring Boot
+# Iniciar la aplicación (http://localhost:8080)
 mvn spring-boot:run
 ```
 Si no tienes Maven instalado, usa el wrapper incluido:
+
 ```bash
- ./mvnw clean package y ./mvnw spring-boot:run (en Windows: mvnw.cmd).
+./mvnw clean package
+./mvnw spring-boot:run   # En Windows: mvnw.cmd
 ```
 ## Endpoints
 
