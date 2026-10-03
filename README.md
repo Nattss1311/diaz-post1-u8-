@@ -78,14 +78,13 @@ Nuevos requisitos del comité: (1) dashboard con conteos por severidad y estado 
 * **Naturaleza de la trazabilidad exigida:** Cumplimiento necesita reconstruir cronológicamente qué cambió y cuándo (estado anterior, estado nuevo, motivo y fecha), sin que el registro pueda alterarse. No necesita reconstruir el estado del hallazgo reproduciendo eventos. Basta una bitácora append-only (`HistorialCambioEstado`) que coexiste con el estado actual de `HallazgoEntity`, que sigue siendo la única fuente de verdad. *Nota: El laboratorio no cuenta con autenticación, por lo que la identificación del usuario en la bitácora queda planteada como una mejora futura mediante Spring Security.*
 * **Señales de sobre-ingeniería (Sección 7.2):** No hay experto de negocio disponible para modelar eventos de dominio, el equipo (una persona) no tiene experiencia previa con Event Sourcing y no hay proyecciones futuras conocidas que justifiquen un Event Store. Mantener dos modelos, rehidratación por replay y manejo de eventos sería complejidad accidental desproporcionada frente a un problema que se resuelve con una consulta agregada y una tabla adicional.
 
-> **Conclusión:** No se justifica CQRS/Event Sourcing completos. Se implementó una extensión liviana: tres métodos de consulta agregada sobre el mismo `HallazgoRepositoryPort`/`HallazgoJpaRepository` y una bitácora append-only, manteniendo los cuatro círculos de Clean Architecture intactos.
+**Conclusión:** No se justifica CQRS/Event Sourcing completos. Se implementó una extensión liviana: tres métodos de consulta agregada sobre el mismo `HallazgoRepositoryPort`/`HallazgoJpaRepository` y una bitácora append-only, manteniendo los cuatro círculos de Clean Architecture intactos.
 
 ---
-
 ## Decisiones de diseño
 
 1. **Severidad como enum simple vs. EstadoHallazgo como enum con máquina de estados:**  
-   `EstadoHallazgo` encapsula una regla de negocio real: qué transiciones son válidas (`ABIERTO` $\rightarrow$ `EN_REMEDIACION` $\rightarrow$ `CERRADO` $\rightarrow$ `REABIERTO` $\rightarrow$ `EN_REMEDIACION`), validadas por `puedeTransicionarA(...)`. `Severidad` (`CRITICA`, `ALTA`, `MEDIA`, `BAJA`) solo clasifica el riesgo: ninguna severidad es "más válida" que otra en un momento dado ni tiene reglas propias, así que darle comportamiento sería complejidad sin valor. Se habría preferido lo contrario si, por ejemplo, la severidad restringiera plazos de remediación o escalamientos.
+   `EstadoHallazgo` encapsula una regla de negocio real: qué transiciones son válidas (`ABIERTO` → `EN_REMEDIACION` → `CERRADO` → `REABIERTO` → `EN_REMEDIACION`), validadas por `puedeTransicionarA(...)`. `Severidad` (`CRITICA`, `ALTA`, `MEDIA`, `BAJA`) solo clasifica el riesgo: ninguna severidad es "más válida" que otra en un momento dado ni tiene reglas propias, así que darle comportamiento sería complejidad sin valor. Se habría preferido lo contrario si, por ejemplo, la severidad restringiera plazos de remediación o escalamientos.
 
 2. **PlanRemediacion como Value Object embebido vs. agregado separado:**  
    Un hallazgo no puede pasar a `EN_REMEDIACION` sin un plan válido ni cerrarse sin uno definido, y esa invariante debe cumplirse siempre dentro de la misma transacción, sin ventanas de inconsistencia. Por el criterio de límite de consistencia transaccional de Bounded Contexts/Agregados (Sección 3.3 de la guía), el plan es un Value Object inmutable embebido en el agregado `HallazgoAuditoria`, no un agregado con repositorio propio.
@@ -96,18 +95,6 @@ Nuevos requisitos del comité: (1) dashboard con conteos por severidad y estado 
 4. **Bitácora simple (`HistorialCambioEstado`) vs. Event Store completo:**  
    Un Event Store obligaría a que `HallazgoAuditoria` dejara de persistir su estado y se reconstruyera por replay, un cambio profundo sobre un agregado que ya funciona y sin necesidad real de reproducir estados intermedios (Sección 5.5). Las señales de sobre-ingeniería de la Sección 7.2 (sin experto en eventos, sin experiencia del equipo, costo desproporcionado) refuerzan la decisión. La bitácora es una tabla append-only que registra cada transición sin ser fuente de verdad del estado.
 
-## Checkpoints de Validación (Evidencias de Pruebas)
-
-| Checkpoint / Endpoint | Método HTTP | Estado Esperado | Evidencia Visual |
-| :--- | :---: | :---: | :---: |
-| **Registrar Hallazgo** | `POST` | `201 Created` | <img src="./images/paso6-registrar-hallazgo.png" width="400" alt="Registrar Hallazgo"> |
-| **Iniciar Remediación** | `POST` | `200 OK` | <img src="./images/paso6-iniciar-remediacion.png" width="400" alt="Iniciar Remediación"> |
-| **Cerrar Hallazgo** | `POST` | `200 OK` | <img src="./images/paso6-cerrar-hallazgo.png" width="400" alt="Cerrar Hallazgo"> |
-| **Reabrir Hallazgo** | `POST` | `200 OK` | <img src="./images/paso6-reabrir-hallazgo.png" width="400" alt="Reabrir Hallazgo"> |
-| **Error al Cerrar Sin Plan** | `POST` | `400 Bad Request` | <img src="./images/paso6-error-cerrar-sin-plan.png" width="400" alt="Error Cierre Sin Plan"> |
-| **Pruebas Unitarias JUnit** | `mvn test` | `BUILD SUCCESS` | <img src="./images/paso6-tests-junit.png" width="400" alt="Pruebas JUnit"> |
-| **Historial Cronológico (Parte 2)** | `GET` | `200 OK` | <img src="./images/historial.png" width="400" alt="Historial Cronológico"> |
-| **Dashboard de Métricas (Parte 2)** | `GET` | `200 OK` | <img src="./images/dashboard.png" width="400" alt="Dashboard de Métricas"> |
 
 ## Cómo Ejecutar
 
