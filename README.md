@@ -122,7 +122,10 @@ mvn test
 # Iniciar la aplicación Spring Boot
 mvn spring-boot:run
 ```
-
+Si no tienes Maven instalado, usa el wrapper incluido:
+```bash
+ ./mvnw clean package y ./mvnw spring-boot:run (en Windows: mvnw.cmd).
+```
 ## Endpoints
 
 | Método | Ruta | Descripción |
@@ -148,7 +151,6 @@ mvn spring-boot:run
 | **Pruebas Unitarias JUnit** | `mvn test` | `BUILD SUCCESS` | <img src="./images/paso6-tests-junit.png" width="400" alt="Pruebas JUnit"> |
 | **Historial Cronológico (Parte 2)** | `GET` | `200 OK` | <img src="./images/historial.png" width="400" alt="Historial Cronológico"> |
 | **Dashboard de Métricas (Parte 2)** | `GET` | `200 OK` | <img src="./images/dashboard1.png" width="400" alt="Dashboard de Métricas"> |
-
 
 ## Herramientas Utilizadas
 Java 17 & Spring Boot 3.x
